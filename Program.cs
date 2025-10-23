@@ -1,5 +1,3 @@
-﻿
-
 using System;
 using System.Data.SqlClient;
 using Microsoft.Data.SqlClient;
@@ -7,45 +5,22 @@ using SistemaLoja.Lab12_ConexaoSQLServer;
 
 namespace SistemaLoja
 {
-    // ===============================================
-    // MODELOS DE DADOS
-    // ===============================================
-
-    // ===============================================
-    // CLASSE DE CONEXÃO
-    // ===============================================
-
-    // ===============================================
-    // REPOSITÓRIO DE PRODUTOS
-    // ===============================================
-
-    // ===============================================
-    // REPOSITÓRIO DE PEDIDOS
-    // ===============================================
-
-    // ===============================================
-    // CLASSE PRINCIPAL
-    // ===============================================
-    
     class Program
     {
         static void Main(string[] args)
         {
-            // IMPORTANTE: Antes de executar, crie o banco de dados!
-            // Execute o script SQL fornecido no arquivo setup.sql
-            
             Console.WriteLine("=== LAB 12 - CONEXÃO SQL SERVER ===\n");
-            
+
             var produtoRepo = new ProdutoRepository();
             var pedidoRepo = new PedidoRepository();
-            
+
             bool continuar = true;
-            
+
             while (continuar)
             {
                 MostrarMenu();
                 string opcao = Console.ReadLine();
-                
+
                 try
                 {
                     switch (opcao)
@@ -53,39 +28,39 @@ namespace SistemaLoja
                         case "1":
                             produtoRepo.ListarTodosProdutos();
                             break;
-                            
+
                         case "2":
                             InserirNovoProduto(produtoRepo);
                             break;
-                            
+
                         case "3":
                             AtualizarProdutoExistente(produtoRepo);
                             break;
-                            
+
                         case "4":
                             DeletarProdutoExistente(produtoRepo);
                             break;
-                            
+
                         case "5":
                             ListarPorCategoria(produtoRepo);
                             break;
-                            
+
                         case "6":
                             CriarNovoPedido(pedidoRepo);
                             break;
-                            
+
                         case "7":
                             ListarPedidosDeCliente(pedidoRepo);
                             break;
-                            
+
                         case "8":
                             DetalhesDoPedido(pedidoRepo);
                             break;
-                            
+
                         case "0":
                             continuar = false;
                             break;
-                            
+
                         default:
                             Console.WriteLine("Opção inválida!");
                             break;
@@ -99,7 +74,7 @@ namespace SistemaLoja
                 {
                     Console.WriteLine($"\n❌ Erro: {ex.Message}");
                 }
-                
+
                 if (continuar)
                 {
                     Console.WriteLine("\nPressione qualquer tecla para continuar...");
@@ -107,7 +82,7 @@ namespace SistemaLoja
                     Console.Clear();
                 }
             }
-            
+
             Console.WriteLine("\nPrograma finalizado!");
         }
 
@@ -133,70 +108,150 @@ namespace SistemaLoja
             Console.Write("\nEscolha uma opção: ");
         }
 
-        // TODO: Implemente os métodos auxiliares abaixo
-        
         static void InserirNovoProduto(ProdutoRepository repo)
         {
             Console.WriteLine("\n=== INSERIR NOVO PRODUTO ===");
-            
-            // TODO: Solicite os dados do produto ao usuário
+
             Console.Write("Nome: ");
             string nome = Console.ReadLine();
-            
-            // TODO: Complete com Preco, Estoque, CategoriaId
-            
+
+            Console.Write("Preço: ");
+            decimal preco = decimal.Parse(Console.ReadLine());
+
+            Console.Write("Estoque: ");
+            int estoque = int.Parse(Console.ReadLine());
+
+            Console.Write("Categoria ID: ");
+            int categoriaId = int.Parse(Console.ReadLine());
+
             var produto = new Produto
             {
-                // TODO: Preencha as propriedades
+                Nome = nome,
+                Preco = preco,
+                Estoque = estoque,
+                CategoriaId = categoriaId
             };
-            
-            // repo.InserirProduto(produto);
+
+            repo.InserirProduto(produto);
         }
 
         static void AtualizarProdutoExistente(ProdutoRepository repo)
         {
-            // TODO: Implemente a atualização
             Console.WriteLine("\n=== ATUALIZAR PRODUTO ===");
-            
+
             Console.Write("ID do produto: ");
             int id = int.Parse(Console.ReadLine());
-            
-            // TODO: Busque o produto e permita alterar os dados
+
+            Console.Write("Novo nome: ");
+            string nome = Console.ReadLine();
+
+            Console.Write("Novo preço: ");
+            decimal preco = decimal.Parse(Console.ReadLine());
+
+            Console.Write("Novo estoque: ");
+            int estoque = int.Parse(Console.ReadLine());
+
+            Console.Write("Nova categoria ID: ");
+            int categoriaId = int.Parse(Console.ReadLine());
+
+            var produto = new Produto
+            {
+                Id = id,
+                Nome = nome,
+                Preco = preco,
+                Estoque = estoque,
+                CategoriaId = categoriaId
+            };
+
+            repo.AtualizarProduto(produto);
         }
 
         static void DeletarProdutoExistente(ProdutoRepository repo)
         {
-            // TODO: Implemente a exclusão
             Console.WriteLine("\n=== DELETAR PRODUTO ===");
-            
+
             Console.Write("ID do produto: ");
             int id = int.Parse(Console.ReadLine());
-            
-            // TODO: Confirme antes de deletar
+
+            Console.Write("Tem certeza que deseja deletar? (s/n): ");
+            if (Console.ReadLine().Trim().ToLower() == "s")
+            {
+                repo.DeletarProduto(id);
+            }
         }
 
         static void ListarPorCategoria(ProdutoRepository repo)
         {
-            // TODO: Implemente
             Console.WriteLine("\n=== PRODUTOS POR CATEGORIA ===");
+
+            Console.Write("Digite o ID da categoria: ");
+            int categoriaId = int.Parse(Console.ReadLine());
+
+            repo.ListarProdutosPorCategoria(categoriaId);
         }
 
         static void CriarNovoPedido(PedidoRepository repo)
         {
-            // TODO: Implemente criação de pedido com itens
             Console.WriteLine("\n=== CRIAR NOVO PEDIDO ===");
+
+            Console.Write("ID do cliente: ");
+            int clienteId = int.Parse(Console.ReadLine());
+
+            var itens = new List<PedidoItem>();
+            decimal total = 0;
+
+            while (true)
+            {
+                Console.Write("ID do produto (ou 0 para finalizar): ");
+                int produtoId = int.Parse(Console.ReadLine());
+
+                if (produtoId == 0)
+                    break;
+
+                Console.Write("Quantidade: ");
+                int quantidade = int.Parse(Console.ReadLine());
+
+                Console.Write("Preço unitário: ");
+                decimal preco = decimal.Parse(Console.ReadLine());
+
+                itens.Add(new PedidoItem
+                {
+                    ProdutoId = produtoId,
+                    Quantidade = quantidade,
+                    PrecoUnitario = preco
+                });
+
+                total += quantidade * preco;
+            }
+
+            var pedido = new Pedido
+            {
+                ClienteId = clienteId,
+                DataPedido = DateTime.Now,
+                ValorTotal = total
+            };
+
+            repo.CriarPedido(pedido, itens);
         }
 
         static void ListarPedidosDeCliente(PedidoRepository repo)
         {
-            // TODO: Implemente
             Console.WriteLine("\n=== PEDIDOS DO CLIENTE ===");
+
+            Console.Write("ID do cliente: ");
+            int clienteId = int.Parse(Console.ReadLine());
+
+            repo.ListarPedidosCliente(clienteId);
         }
 
         static void DetalhesDoPedido(PedidoRepository repo)
         {
-            // TODO: Implemente
             Console.WriteLine("\n=== DETALHES DO PEDIDO ===");
+
+            Console.Write("ID do pedido: ");
+            int pedidoId = int.Parse(Console.ReadLine());
+
+            repo.ObterDetalhesPedido(pedidoId);
         }
     }
 }
