@@ -1,88 +1,141 @@
-﻿using Microsoft.Data.SqlClient;
+using Microsoft.Data.SqlClient;
+using System;
+using System.Collections.Generic;
 
-namespace SistemaLoja.Lab12_ConexaoSQLServer;
-
-public class PedidoRepository
+namespace SistemaLoja.Lab12_ConexaoSQLServer
 {
-    // EXERCÍCIO 7: Criar pedido com itens (transação)
-    public void CriarPedido(Pedido pedido, List<PedidoItem> itens)
+    public class PedidoRepository
     {
-        // TODO: Implemente criação de pedido com transação
-        // 1. Inserir Pedido
-        // 2. Inserir cada PedidoItem
-        // 3. Atualizar estoque dos produtos
-        // IMPORTANTE: Use SqlTransaction!
-            
-        using (SqlConnection conn = DatabaseConnection.GetConnection())
+        // EXERCÍCIO 7: Criar pedido com itens (transação)
+        public void CriarPedido(Pedido pedido, List<PedidoItem> itens)
         {
-            conn.Open();
-                
-            // TODO: Inicie a transação
-            SqlTransaction transaction = conn.BeginTransaction();
-                
-            try
+            using (SqlConnection conn = DatabaseConnection.GetConnection())
             {
-                // TODO: 1. Inserir pedido e obter ID
-                string sqlPedido = "INSERT INTO Pedidos (ClienteId, DataPedido, ValorTotal) " +
-                                   "OUTPUT INSERTED.Id " +
-                                   "VALUES (@ClienteId, @DataPedido, @ValorTotal)";
-                    
-                int pedidoId = 0;
-                using (SqlCommand cmd = new SqlCommand(sqlPedido, conn, transaction))
+                conn.Open();
+                SqlTransaction transaction = conn.BeginTransaction();
+
+                try
                 {
-                    // TODO: Complete os parâmetros e execute
+                    string sqlPedido = "INSERT INTO Pedidos (ClienteId, DataPedido, ValorTotal) " +
+                                       "OUTPUT INSERTED.Id " +
+                                       "VALUES (@ClienteId, @DataPedido, @ValorTotal)";
+
+                    int pedidoId;
+                    using (SqlCommand cmd = new SqlCommand(sqlPedido, conn, transaction))
+                    {
+                        cmd.Parameters.AddWithValue("@ClienteId", pedido.ClienteId);
+                        cmd.Parameters.AddWithValue("@DataPedido", pedido.DataPedido);
+                        cmd.Parameters.AddWithValue("@ValorTotal", pedido.ValorTotal);
+                        pedidoId = (int)cmd.ExecuteScalar();
+                    }
+
+                    foreach (var item in itens)
+                    {
+                        string sqlItem = "INSERT INTO PedidoItens (PedidoId, ProdutoId, Quantidade, PrecoUnitario) " +
+                                         "VALUES (@PedidoId, @ProdutoId, @Quantidade, @PrecoUnitario)";
+
+                        using (SqlCommand cmd = new SqlCommand(sqlItem, conn, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@PedidoId", pedidoId);
+                            cmd.Parameters.AddWithValue("@ProdutoId", item.ProdutoId);
+                            cmd.Parameters.AddWithValue("@Quantidade", item.Quantidade);
+                            cmd.Parameters.AddWithValue("@PrecoUnitario", item.PrecoUnitario);
+                            cmd.ExecuteNonQuery();
+                        }
+
+                        string sqlEstoque = "UPDATE Produtos SET Estoque = Estoque - @Quantidade WHERE Id = @ProdutoId";
+                        using (SqlCommand cmd = new SqlCommand(sqlEstoque, conn, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@Quantidade", item.Quantidade);
+                            cmd.Parameters.AddWithValue("@ProdutoId", item.ProdutoId);
+                            cmd.ExecuteNonQuery();
+                        }
+                    }
+
+                    transaction.Commit();
+                    Console.WriteLine("Pedido criado com sucesso!");
                 }
-                    
-                // TODO: 2. Inserir itens do pedido
-                    
-                // TODO: 3. Atualizar estoque
-                    
-                // TODO: Commit da transação
-                transaction.Commit();
-                Console.WriteLine("Pedido criado com sucesso!");
-            }
-            catch (Exception ex)
-            {
-                // TODO: Rollback em caso de erro
-                transaction.Rollback();
-                Console.WriteLine($"Erro ao criar pedido: {ex.Message}");
-                throw;
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                    Console.WriteLine($"Erro ao criar pedido: {ex.Message}");
+                    throw;
+                }
             }
         }
-    }
 
-    // EXERCÍCIO 8: Listar pedidos de um cliente
-    public void ListarPedidosCliente(int clienteId)
-    {
-        // TODO: Liste todos os pedidos de um cliente
-        // Mostre: Id, Data, ValorTotal
-            
-        string sql = "SELECT * FROM Pedidos WHERE ClienteId = @ClienteId ORDER BY DataPedido DESC";
-            
-        // TODO: Complete a implementação
-    }
+        // EXERCÍCIO 8: Listar pedidos de um cliente
+        public void ListarPedidosCliente(int clienteId)
+        {
+            string sql = "SELECT Id, DataPedido, ValorTotal FROM Pedidos WHERE ClienteId = @ClienteId ORDER BY DataPedido DESC";
 
-    // EXERCÍCIO 9: Obter detalhes completos de um pedido
-    public void ObterDetalhesPedido(int pedidoId)
-    {
-        // TODO: Mostre o pedido com todos os itens
-        // Faça JOIN com Produtos para mostrar nomes
-            
-        string sql = @"SELECT 
-                            pi.*, 
-                            p.Nome as NomeProduto,
-                            (pi.Quantidade * pi.PrecoUnitario) as Subtotal
-                          FROM PedidoItens pi
-                          INNER JOIN Produtos p ON pi.ProdutoId = p.Id
-                          WHERE pi.PedidoId = @PedidoId";
-            
-        // TODO: Complete a implementação
-    }
+            using (SqlConnection conn = DatabaseConnection.GetConnection())
+            {
+                conn.Open();
+                using (SqlCommand cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@ClienteId", clienteId);
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            Console.WriteLine($"ID: {reader["Id"]}, Data: {reader["DataPedido"]}, Valor Total: R${reader["ValorTotal"]}");
+                        }
+                    }
+                }
+            }
+        }
 
-    // DESAFIO 3: Calcular total de vendas por período
-    public void TotalVendasPorPeriodo(DateTime dataInicio, DateTime dataFim)
-    {
-        // TODO: Calcule o total de vendas em um período
-        // Use ExecuteScalar para obter a soma
+        // EXERCÍCIO 9: Obter detalhes completos de um pedido
+        public void ObterDetalhesPedido(int pedidoId)
+        {
+            string sql = @"
+                SELECT 
+                    pi.*, 
+                    p.Nome as NomeProduto,
+                    (pi.Quantidade * pi.PrecoUnitario) as Subtotal
+                FROM PedidoItens pi
+                INNER JOIN Produtos p ON pi.ProdutoId = p.Id
+                WHERE pi.PedidoId = @PedidoId";
+
+            using (SqlConnection conn = DatabaseConnection.GetConnection())
+            {
+                conn.Open();
+                using (SqlCommand cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@PedidoId", pedidoId);
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        Console.WriteLine($"Itens do Pedido #{pedidoId}:");
+                        while (reader.Read())
+                        {
+                            Console.WriteLine(
+                                $"Produto: {reader["NomeProduto"]}, Qtd: {reader["Quantidade"]}, " +
+                                $"Preço Unit.: R${reader["PrecoUnitario"]}, Subtotal: R${reader["Subtotal"]}");
+                        }
+                    }
+                }
+            }
+        }
+
+        // DESAFIO 3: Calcular total de vendas por período
+        public void TotalVendasPorPeriodo(DateTime dataInicio, DateTime dataFim)
+        {
+            string sql = "SELECT SUM(ValorTotal) FROM Pedidos WHERE DataPedido BETWEEN @DataInicio AND @DataFim";
+
+            using (SqlConnection conn = DatabaseConnection.GetConnection())
+            {
+                conn.Open();
+                using (SqlCommand cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@DataInicio", dataInicio);
+                    cmd.Parameters.AddWithValue("@DataFim", dataFim);
+
+                    var resultado = cmd.ExecuteScalar();
+                    decimal total = resultado != DBNull.Value ? Convert.ToDecimal(resultado) : 0;
+                    Console.WriteLine($"Total de vendas entre {dataInicio:d} e {dataFim:d}: R${total}");
+                }
+            }
+        }
     }
 }
