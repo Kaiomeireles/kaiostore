@@ -2,7 +2,7 @@
 
 ## Integrantes:
 - Kaio Vinicius Meireles Alves - RM553282
-
+- Lucas Alves de Souza -  RM553956
 ## Descrição:
 Este projeto simula um sistema de loja com funcionalidades de cadastro de produtos, clientes, categorias e pedidos. Ele segue os princípios da Programação Orientada a Objetos (POO) em C# e usa uma abordagem modular para a separação de responsabilidades.
 
