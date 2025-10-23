@@ -1,19 +1,20 @@
-﻿using Microsoft.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 
-namespace SistemaLoja.Lab12_ConexaoSQLServer;
-
-public class DatabaseConnection
+namespace SistemaLoja.Lab12_ConexaoSQLServer
 {
-    // TODO: Complete a connection string com os dados corretos
-    private static string connectionString = 
-        "Server=__________,1433;" +
-        "Database=__________;" +
-        "User Id=__________;" +
-        "Password=__________;" +
-        "TrustServerCertificate=True;";
-
-    public static SqlConnection GetConnection()
+    public class DatabaseConnection
     {
-        return new SqlConnection(connectionString);
+        // Substitua os valores pelos dados reais do seu SQL Server
+        private static string connectionString =
+            "Server=localhost,1433;" +
+            "Database=SistemaLojaDB;" +
+            "User Id=sa;" +
+            "Password=SuaSenhaSeguraAqui;" +
+            "TrustServerCertificate=True;";
+
+        public static SqlConnection GetConnection()
+        {
+            return new SqlConnection(connectionString);
+        }
     }
 }
